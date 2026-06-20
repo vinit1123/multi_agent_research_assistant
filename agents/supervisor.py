@@ -7,52 +7,37 @@ llm = ChatOllama(
 
 def supervisor(question: str):
 
-    q = question.lower()
-
-    # Fast deterministic routing
-
-    if any(word in q for word in [
-        "latest",
-        "news",
-        "research",
-        "current",
-        "recent"
-    ]):
-        return "research"
-
-    if any(word in q for word in [
-        "summarize",
-        "summary",
-        "summarise"
-    ]):
-        return "summary"
-
-    if any(word in q for word in [
-        "write",
-        "blog",
-        "email",
-        "article",
-        "report"
-    ]):
-        return "writer"
-
-    # Fallback to LLM
-
     prompt = f"""
-Return ONLY one word:
+You are a routing agent.
+
+Choose ONLY one route:
 
 research
 summary
 writer
 chat
 
+Rules:
+- Current events, news, facts, technologies, research topics -> research
+- Summarize something -> summary
+- Write blog/article/report -> writer
+- Greetings and casual conversation -> chat
+
 Question:
 {question}
+
+Return ONLY one word:
+research
+summary
+writer
+chat
 """
 
     response = llm.invoke(prompt)
 
     route = response.content.strip().lower()
+
+    print("\nRAW ROUTE:", route)
 
     if "research" in route:
         return "research"

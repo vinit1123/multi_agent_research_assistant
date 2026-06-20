@@ -1,5 +1,7 @@
 from tools.web_search import web_search
 from langchain_ollama import ChatOllama
+from memory_classifier import should_save_memory
+from memory_manager import save_long_term_memory
 
 from memory import (
     get_memory,
@@ -43,17 +45,25 @@ Instructions:
 
         response = llm.invoke(prompt)
 
-        save_memory(
+    if should_save_memory(question):
+
+        print("\nSAVING TO LONG TERM MEMORY")
+
+    save_long_term_memory(
+        question
+    )
+
+    save_memory(
             "user",
             question
         )
 
-        save_memory(
+    save_memory(
             "assistant",
             response.content
         )
 
-        return response.content
+    return response.content
 
     # -------------------------
     # Normal Research Path

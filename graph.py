@@ -20,6 +20,15 @@ class AgentState(TypedDict):
     report: str
     answer: str
 
+#----------------
+# Guardrails
+#-------------------
+
+from guardrails import validate_input
+
+
+
+
 # ------------------
 # Supervisor Node
 # ------------------
@@ -93,11 +102,39 @@ def chat_node(state):
         "answer": result
     }
 #----------------------------------
+def guardrail_node(state):
+
+    question = state["question"]
+
+    if not validate_input(question):
+
+        print("\nBLOCKED BY GUARDRAILS")
+
+        return {
+            "answer": "Request blocked by guardrails."
+        }
+
+    return {
+        "answer": "allowed"
+    }
+
+def guardrail_router(state):
+
+    if state["answer"] == "allowed":
+        return "allowed"
+
+    return "blocked"
+
 def router(state):
     return state["route"]
 
 
 graph = StateGraph(AgentState)
+
+graph.add_node(
+    "guardrail",
+    guardrail_node
+)
 
 graph.add_node(
     "supervisor",
@@ -125,7 +162,18 @@ graph.add_node(
 )
 
 graph.set_entry_point(
-    "supervisor"
+    "guardrail"
+)
+
+
+
+graph.add_conditional_edges(
+    "guardrail",
+    guardrail_router,
+    {
+        "allowed": "supervisor",
+        "blocked": END
+    }
 )
 
 graph.add_conditional_edges(
