@@ -1,12 +1,65 @@
 from tools.web_search import web_search
 from langchain_ollama import ChatOllama
 
+from memory import (
+    get_memory,
+    get_formatted_memory,
+    save_memory,
+    is_followup
+)
+
 llm = ChatOllama(
     model="llama3.2",
     temperature=0
 )
 
 def research_agent(question):
+
+    # -------------------------
+    # Follow-up Question Path
+    # -------------------------
+
+    if is_followup(question):
+
+        history = get_formatted_memory()
+
+        prompt = f"""
+You are an expert AI assistant.
+
+Previous Conversation:
+
+{history}
+
+Current Question:
+{question}
+
+Instructions:
+- Continue the previous discussion.
+- Use conversation history.
+- Do NOT start a new topic.
+- Do NOT print Human: or Assistant:
+- Give a natural answer.
+"""
+
+        response = llm.invoke(prompt)
+
+        save_memory(
+            "user",
+            question
+        )
+
+        save_memory(
+            "assistant",
+            response.content
+        )
+
+        return response.content
+
+    # -------------------------
+    # Normal Research Path
+    # -------------------------
+
+    history = get_formatted_memory()
 
     print("\nQUESTION:")
     print(question)
@@ -19,24 +72,17 @@ def research_agent(question):
     print("\nSEARCH RESULTS:\n")
     print(results)
 
-    print("\nTOTAL:", len(results))
-
     if not results:
         return "No search results found."
 
     context = "\n\n".join(
-    f"Title: {r['title']}\n"
-    f"Content: {r['body'][:200]}"
-    for r in results
-)
-    
-
-    print("\nCONTEXT CREATED")
+        f"Title: {r['title']}\n"
+        f"Content: {r['body'][:200]}"
+        for r in results
+    )
 
     prompt = f"""
 You are an expert research assistant.
-
-Use ONLY the search results provided.
 
 Question:
 {question}
@@ -44,19 +90,25 @@ Question:
 Search Results:
 {context}
 
+Previous Conversation:
+{history}
+
 Instructions:
-- Give a concise answer.
-- Use information from the search results.
-- If information is insufficient, say so.
+- Use the search results.
+- Answer clearly.
+- Be concise.
 """
 
-    print("\nBEFORE LLM CALL")
-    print("\nPROMPT LENGTH:", len(prompt))
     response = llm.invoke(prompt)
 
-    print("\nAFTER LLM CALL")
+    save_memory(
+        "user",
+        question
+    )
 
-    print("\nRAW RESPONSE:")
-    print(response)
+    save_memory(
+        "assistant",
+        response.content
+    )
 
     return response.content
