@@ -10,7 +10,14 @@ from agents.research_agent import research_agent
 from agents.summarizer_agent import summarizer_agent
 from agents.writer_agent import writer_agent
 from agents.chat_agent import chat_agent
+from agents.tool_agent import tool_agent
 
+from guardrails import validate_input
+
+
+# ------------------
+# State
+# ------------------
 
 class AgentState(TypedDict):
     question: str
@@ -19,14 +26,29 @@ class AgentState(TypedDict):
     summary: str
     report: str
     answer: str
-
-#----------------
-# Guardrails
-#-------------------
-
-from guardrails import validate_input
+    tool_result: str
+    
 
 
+# ------------------
+# Guardrail Node
+# ------------------
+
+def guardrail_node(state):
+
+    question = state["question"]
+
+    if not validate_input(question):
+
+        print("\nBLOCKED BY GUARDRAILS")
+
+        return {
+            "answer": "Request blocked by guardrails."
+        }
+
+    return {
+        "answer": "allowed"
+    }
 
 
 # ------------------
@@ -44,6 +66,23 @@ def supervisor_node(state):
     return {
         "route": route
     }
+
+
+# ------------------
+# Tool Node
+# ------------------
+
+def tool_node(state):
+
+    result = tool_agent(
+        state["question"]
+    )
+
+    return {
+        "answer": result
+    }
+
+
 # ------------------
 # Research Node
 # ------------------
@@ -87,11 +126,12 @@ def writer_node(state):
     return {
         "report": result
     }
-#-------------------------
-# Chat_Node
-#-------------------------    
-    
-    
+
+
+# ------------------
+# Chat Node
+# ------------------
+
 def chat_node(state):
 
     result = chat_agent(
@@ -101,22 +141,11 @@ def chat_node(state):
     return {
         "answer": result
     }
-#----------------------------------
-def guardrail_node(state):
 
-    question = state["question"]
 
-    if not validate_input(question):
-
-        print("\nBLOCKED BY GUARDRAILS")
-
-        return {
-            "answer": "Request blocked by guardrails."
-        }
-
-    return {
-        "answer": "allowed"
-    }
+# ------------------
+# Routers
+# ------------------
 
 def guardrail_router(state):
 
@@ -125,11 +154,18 @@ def guardrail_router(state):
 
     return "blocked"
 
+
 def router(state):
     return state["route"]
 
 
-graph = StateGraph(AgentState)
+# ------------------
+# Graph
+# ------------------
+
+graph = StateGraph(
+    AgentState
+)
 
 graph.add_node(
     "guardrail",
@@ -139,6 +175,11 @@ graph.add_node(
 graph.add_node(
     "supervisor",
     supervisor_node
+)
+
+graph.add_node(
+    "tool",
+    tool_node
 )
 
 graph.add_node(
@@ -161,11 +202,17 @@ graph.add_node(
     chat_node
 )
 
+# ------------------
+# Entry Point
+# ------------------
+
 graph.set_entry_point(
     "guardrail"
 )
 
-
+# ------------------
+# Guardrail Routing
+# ------------------
 
 graph.add_conditional_edges(
     "guardrail",
@@ -176,16 +223,25 @@ graph.add_conditional_edges(
     }
 )
 
+# ------------------
+# Supervisor Routing
+# ------------------
+
 graph.add_conditional_edges(
     "supervisor",
     router,
     {
+        "tool": "tool",
         "research": "research",
         "summary": "summary",
         "writer": "writer",
         "chat": "chat"
     }
 )
+
+# ------------------
+# Research Flow
+# ------------------
 
 graph.add_edge(
     "research",
@@ -202,9 +258,26 @@ graph.add_edge(
     END
 )
 
+# ------------------
+# Tool Flow
+# ------------------
+
+graph.add_edge(
+    "tool",
+    END
+)
+
+# ------------------
+# Chat Flow
+# ------------------
+
 graph.add_edge(
     "chat",
     END
 )
+
+# ------------------
+# Compile
+# ------------------
 
 workflow = graph.compile()

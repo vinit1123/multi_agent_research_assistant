@@ -1,10 +1,10 @@
 from tools.web_search import web_search
 from langchain_ollama import ChatOllama
+
 from memory_classifier import should_save_memory
 from memory_manager import save_long_term_memory
 
 from memory import (
-    get_memory,
     get_formatted_memory,
     save_memory,
     is_followup
@@ -17,9 +17,9 @@ llm = ChatOllama(
 
 def research_agent(question):
 
-    # -------------------------
+    # ---------------------------------
     # Follow-up Question Path
-    # -------------------------
+    # ---------------------------------
 
     if is_followup(question):
 
@@ -45,53 +45,35 @@ Instructions:
 
         response = llm.invoke(prompt)
 
-    if should_save_memory(question):
-
-        print("\nSAVING TO LONG TERM MEMORY")
-
-    save_long_term_memory(
-        question
-    )
-
-    save_memory(
-            "user",
-            question
-        )
-
-    save_memory(
-            "assistant",
-            response.content
-        )
-
-    return response.content
-
-    # -------------------------
+    # ---------------------------------
     # Normal Research Path
-    # -------------------------
+    # ---------------------------------
 
-    history = get_formatted_memory()
+    else:
 
-    print("\nQUESTION:")
-    print(question)
+        history = get_formatted_memory()
 
-    results = web_search(
-        question,
-        max_results=2
-    )
+        print("\nQUESTION:")
+        print(question)
 
-    print("\nSEARCH RESULTS:\n")
-    print(results)
+        results = web_search(
+            question,
+            max_results=2
+        )
 
-    if not results:
-        return "No search results found."
+        print("\nSEARCH RESULTS:\n")
+        print(results)
 
-    context = "\n\n".join(
-        f"Title: {r['title']}\n"
-        f"Content: {r['body'][:200]}"
-        for r in results
-    )
+        if not results:
+            return "No search results found."
 
-    prompt = f"""
+        context = "\n\n".join(
+            f"Title: {r['title']}\n"
+            f"Content: {r['body'][:200]}"
+            for r in results
+        )
+
+        prompt = f"""
 You are an expert research assistant.
 
 Question:
@@ -109,7 +91,19 @@ Instructions:
 - Be concise.
 """
 
-    response = llm.invoke(prompt)
+        response = llm.invoke(prompt)
+
+    # ---------------------------------
+    # Common Save Logic
+    # ---------------------------------
+
+    if should_save_memory(question):
+
+        print(f"\nMEMORY SAVED: {question}")
+
+        save_long_term_memory(
+            question
+        )
 
     save_memory(
         "user",

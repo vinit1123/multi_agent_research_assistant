@@ -111,13 +111,19 @@ def search_memory(query):
         k=5
     )
 
-    docs = [
-        doc
-        for doc in docs
-        if doc.page_content != "init"
-    ]
+    filtered = []
 
-    return docs
+    for doc in docs:
+
+        if doc.page_content in [
+            "init",
+            "Memory Initialized"
+        ]:
+            continue
+
+        filtered.append(doc)
+
+    return filtered
 
 # ------------------------
 # Show All Memories

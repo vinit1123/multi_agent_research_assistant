@@ -10,23 +10,54 @@ def supervisor(question: str):
     prompt = f"""
 You are a routing agent.
 
-Choose ONLY one route:
+Choose ONLY ONE route:
 
+tool
 research
 summary
 writer
 chat
 
 Rules:
-- Current events, news, facts, technologies, research topics -> research
-- Summarize something -> summary
-- Write blog/article/report -> writer
-- Greetings and casual conversation -> chat
+
+tool:
+- Math calculations
+- Arithmetic expressions
+- Memory lookup
+- Personal information lookup
+- "What do you know about me"
+- "Who am I"
+- User profile questions
+
+research:
+- Current events
+- News
+- AI topics
+- Technologies
+- Factual questions
+- Research questions
+
+summary:
+- Summarize text
+- Create summary
+- Shorten content
+
+writer:
+- Write article
+- Write blog
+- Write report
+- Generate document
+
+chat:
+- Greetings
+- Casual conversation
+- General chat
 
 Question:
 {question}
 
 Return ONLY one word:
+tool
 research
 summary
 writer
@@ -39,13 +70,17 @@ chat
 
     print("\nRAW ROUTE:", route)
 
-    if "research" in route:
+    if "tool" in route:
+        return "tool"
+
+    elif "research" in route:
         return "research"
 
-    if "summary" in route:
+    elif "summary" in route:
         return "summary"
 
-    if "writer" in route:
+    elif "writer" in route:
         return "writer"
 
-    return "chat"
+    else:
+        return "chat"
