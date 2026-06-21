@@ -1,62 +1,62 @@
+import register_tools
+
 from tool_router import select_tool
 
-from tools.calculator import calculator
-from tools.web_search import web_search
-
-from memory_manager import (
-    search_memory,
-    show_all_memories
+from mcp_client import (
+    execute_tool as mcp_execute_tool,
+    discover_tools
 )
 
 
 def execute_tool(question):
 
-    tool = select_tool(question)
+    tool_name = select_tool(question)
 
-    print(f"\nTOOL SELECTED: {tool}")
+    print(
+        f"\nTOOL SELECTED: {tool_name}"
+    )
 
-    # -------------------
-    # Calculator
-    # -------------------
+    tools = discover_tools()
 
-    if tool == "calculator":
+    tool_info = None
 
-        return calculator(
+    for tool in tools:
+
+        if tool["name"] == tool_name:
+
+            tool_info = tool
+            break
+
+    if not tool_info:
+        return "Tool not found"
+
+    # Tool needs input
+
+    if tool_info["takes_input"]:
+
+        result = mcp_execute_tool(
+            tool_name,
             question
         )
 
-    # -------------------
-    # Memory
-    # -------------------
+    # Tool does not need input
 
-    elif tool == "memory":
+    else:
 
-        memories = show_all_memories()
-
-        if not memories:
-            return "No memories found."
-
-        return "\n".join(
-            memories
+        result = mcp_execute_tool(
+            tool_name
         )
 
-    # -------------------
-    # Web Search
-    # -------------------
+    # Format web search
 
-    elif tool == "web_search":
-
-        results = web_search(
-            question,
-            max_results=2
-        )
-
-        if not results:
-            return "No search results found."
+    if (
+        tool_name == "web_search"
+        and isinstance(result, list)
+    ):
 
         formatted = []
 
-        for r in results:
+        for r in result:
 
             formatted.append(
                 f"Title: {r['title']}\n"
@@ -67,8 +67,13 @@ def execute_tool(question):
             formatted
         )
 
-    # -------------------
-    # Fallback
-    # -------------------
+    # Format memory
 
-    return "No tool found"
+    if (
+        tool_name == "memory"
+        and isinstance(result, list)
+    ):
+
+        return "\n".join(result)
+
+    return result

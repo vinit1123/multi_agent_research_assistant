@@ -1,6 +1,6 @@
 from langchain_ollama import ChatOllama
+
 from tool_executor import execute_tool
-from tool_router import select_tool
 
 llm = ChatOllama(
     model="llama3.2",
@@ -9,62 +9,30 @@ llm = ChatOllama(
 
 def tool_agent(question):
 
-    print("STEP 1")
+    # Execute tool through MCP
+    tool_result = execute_tool(
+        question
+    )
 
-    tool = select_tool(question)
+    # Memory Tool
+    if isinstance(tool_result, str) and (
+        "My name is" in tool_result
+        or "QA Lead" in tool_result
+        or "GenAI Developer" in tool_result
+    ):
 
-    
+        return (
+            "Stored Information:\n\n"
+            + tool_result
+        )
 
-    tool_result = execute_tool(question)
+    # Calculator Tool
+    if (
+        isinstance(tool_result, str)
+        and tool_result.strip().isdigit()
+    ):
 
-    print("STEP 2")
-    print(tool_result)
+        return tool_result
 
-    # -------------------
-    # Calculator
-    # -------------------
-
-    if tool == "calculator":
-
-        return str(tool_result)
-
-    # -------------------
-    # Memory
-    # -------------------
-
-    elif tool == "memory":
-
-        return f"""
-Stored Information:
-
-{tool_result}
-"""
-
-    # -------------------
-    # Web Search
-    # -------------------
-
-    elif tool == "web_search":
-
-        prompt = f"""
-You are a research assistant.
-
-Search Results:
-{tool_result}
-
-Instructions:
-- Summarize the search results.
-- Mention key points only.
-- Be concise.
-- Do not invent facts.
-"""
-
-        print("STEP 3")
-
-        response = llm.invoke(prompt)
-
-        print("STEP 4")
-
-        return response.content
-
-    return "No answer generated."
+    # Web Search / Weather / Future Tools
+    return tool_result
