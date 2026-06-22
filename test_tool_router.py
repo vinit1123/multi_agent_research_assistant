@@ -1,6 +1,6 @@
-from tool_router import select_tool
+from tool_router import select_tools
 
-print(select_tool("25 * 17"))
-print(select_tool("What do you know about me?"))
-print(select_tool("Latest AI news"))
-print(select_tool("Search AI trends"))
+print(select_tools("25 * 17"))
+print(select_tools("What do you know about me?"))
+print(select_tools("Latest AI news"))
+print(select_tools("Search AI trends"))

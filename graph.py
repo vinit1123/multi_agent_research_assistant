@@ -1,5 +1,9 @@
 from typing import TypedDict
 
+from metrics import (
+    increment_agent
+)
+
 from langgraph.graph import (
     StateGraph,
     END
@@ -57,6 +61,10 @@ def guardrail_node(state):
 
 def supervisor_node(state):
 
+    increment_agent(
+        "supervisor"
+    )
+
     route = supervisor(
         state["question"]
     )
@@ -67,12 +75,15 @@ def supervisor_node(state):
         "route": route
     }
 
-
 # ------------------
 # Tool Node
 # ------------------
 
 def tool_node(state):
+
+    increment_agent(
+        "tool"
+    )
 
     result = tool_agent(
         state["question"]
@@ -82,12 +93,15 @@ def tool_node(state):
         "answer": result
     }
 
-
 # ------------------
 # Research Node
 # ------------------
 
 def research_node(state):
+
+    increment_agent(
+        "research"
+    )
 
     result = research_agent(
         state["question"]
@@ -97,12 +111,15 @@ def research_node(state):
         "research": result
     }
 
-
 # ------------------
 # Summary Node
 # ------------------
 
 def summary_node(state):
+
+    increment_agent(
+        "summary"
+    )
 
     result = summarizer_agent(
         state["research"]
@@ -112,12 +129,15 @@ def summary_node(state):
         "summary": result
     }
 
-
 # ------------------
 # Writer Node
 # ------------------
 
 def writer_node(state):
+
+    increment_agent(
+        "writer"
+    )
 
     result = writer_agent(
         state["summary"]
@@ -134,6 +154,10 @@ def writer_node(state):
 
 def chat_node(state):
 
+    increment_agent(
+        "chat"
+    )
+
     result = chat_agent(
         state["question"]
     )
@@ -141,8 +165,6 @@ def chat_node(state):
     return {
         "answer": result
     }
-
-
 # ------------------
 # Routers
 # ------------------

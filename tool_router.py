@@ -1,14 +1,6 @@
-import register_tools
-
 from langchain_ollama import ChatOllama
-
-from tool_discovery import (
-    get_tool_descriptions
-)
-
-from tool_registry import (
-    get_all_tools
-)
+from tool_discovery import get_tool_descriptions
+from tool_registry import get_all_tools
 
 llm = ChatOllama(
     model="llama3.2",
@@ -16,19 +8,23 @@ llm = ChatOllama(
 )
 
 
-def select_tool(question):
+def select_tools(question):
 
     q = question.lower()
 
-    # -------------------
-    # Fast Rules
-    # -------------------
+    tools = []
+
+    # Calculator
 
     if any(
         op in q
         for op in ["+", "-", "*", "/", "="]
     ):
-        return "calculator"
+        tools.append(
+            "calculator"
+        )
+
+    # Memory
 
     if any(
         word in q
@@ -36,67 +32,74 @@ def select_tool(question):
             "about me",
             "remember",
             "my name",
-            "what do you know",
-            "who am i"
+            "who am i",
+            "what do you know"
         ]
     ):
-        return "memory"
+        tools.append(
+            "memory"
+        )
 
-    # -------------------
-    # Dynamic Tool Discovery
-    # -------------------
+    # Weather
 
-    tools_description = get_tool_descriptions()
+    if "weather" in q:
+        tools.append(
+            "weather"
+        )
 
-    available_tools = list(
+    # News / Search
+
+    if any(
+        x in q
+        for x in [
+            "news",
+            "latest",
+            "search"
+        ]
+    ):
+        tools.append(
+            "web_search"
+        )
+
+    # Nothing matched
+
+    if tools:
+        return list(set(tools))
+
+    # LLM Fallback
+
+    tool_names = list(
         get_all_tools().keys()
     )
 
-    tool_list = "\n".join(
-        available_tools
-    )
-
     prompt = f"""
-You are a tool routing agent.
+Available tools:
 
-Available Tools:
-
-{tools_description}
-
-Valid Tool Names:
-
-{tool_list}
-
-Rules:
-- Choose the single BEST tool.
-- Return ONLY one tool name.
-- Never invent a tool name.
-- Never explain your answer.
-- Output must exactly match one valid tool name.
+{tool_names}
 
 Question:
 {question}
+
+Return only matching tool names.
+
+Example:
+weather,web_search
 """
 
-    response = llm.invoke(prompt)
-
-    tool = response.content.strip().lower()
-
-    # print("\nAVAILABLE TOOLS:")
-    # print(available_tools)
-
-    # print("\nRAW TOOL:")
-    # print(tool)
-
-    # -------------------
-    # Validation
-    # -------------------
-
-    if tool in available_tools:
-        return tool
-
-    print(
-        "\nINVALID TOOL -> FALLBACK TO web_search"
+    response = llm.invoke(
+        prompt
     )
 
-    return "web_search"
+    result = response.content.lower()
+
+    found = []
+
+    for tool in tool_names:
+
+        if tool in result:
+            found.append(tool)
+
+    if found:
+        return found
+
+    return ["web_search"]

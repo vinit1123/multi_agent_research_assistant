@@ -1,79 +1,56 @@
 import register_tools
 
-from tool_router import select_tool
+from metrics import (
+    increment_request,
+    increment_tool
+)
+
+from tool_router import (
+    select_tools
+)
 
 from mcp_client import (
-    execute_tool as mcp_execute_tool,
-    discover_tools
+    execute_tool as mcp_execute
 )
 
 
 def execute_tool(question):
 
-    tool_name = select_tool(question)
+    # Total request count
+    increment_request()
 
-    print(
-        f"\nTOOL SELECTED: {tool_name}"
+    tools = select_tools(
+        question
     )
 
-    tools = discover_tools()
+    print(
+        f"\nTOOLS SELECTED: {tools}"
+    )
 
-    tool_info = None
+    results = []
 
-    for tool in tools:
+    for tool_name in tools:
 
-        if tool["name"] == tool_name:
+        # Tool usage count
+        increment_tool(
+            tool_name
+        )
 
-            tool_info = tool
-            break
-
-    if not tool_info:
-        return "Tool not found"
-
-    # Tool needs input
-
-    if tool_info["takes_input"]:
-
-        result = mcp_execute_tool(
+        result = mcp_execute(
             tool_name,
             question
         )
 
-    # Tool does not need input
+        if result:
 
-    else:
-
-        result = mcp_execute_tool(
-            tool_name
-        )
-
-    # Format web search
-
-    if (
-        tool_name == "web_search"
-        and isinstance(result, list)
-    ):
-
-        formatted = []
-
-        for r in result:
-
-            formatted.append(
-                f"Title: {r['title']}\n"
-                f"Content: {r['body']}"
+            results.append(
+                f"{tool_name.upper()}:\n{result}"
             )
 
-        return "\n\n".join(
-            formatted
-        )
+    if not results:
 
-    # Format memory
+        return "No tool results."
 
-    if (
-        tool_name == "memory"
-        and isinstance(result, list)
-    ):
-
-        return "\n".join(result)
-
-    return result
+    return "\n\n".join(
+        results
+    )

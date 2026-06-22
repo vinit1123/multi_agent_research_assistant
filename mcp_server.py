@@ -30,10 +30,24 @@ def call_tool(
     tools = get_all_tools()
 
     if tool_name not in tools:
-        return None
 
-    func = tools[tool_name]["func"]
+        return f"Tool '{tool_name}' not found"
 
+    tool = tools[tool_name]
+
+    func = tool["func"]
+
+    takes_input = tool.get(
+        "takes_input",
+        True
+    )
+
+    # Memory tool jaisa tool
+    if not takes_input:
+
+        return func()
+
+    # Calculator, Weather, Web Search, PDF Search
     return func(
         *args,
         **kwargs
